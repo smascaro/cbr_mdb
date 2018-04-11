@@ -832,3 +832,6 @@ begin
 end;
 /
 
+insert into users values ('msk1416', 'Sergi', 'Mascaro');
+insert into users values ('bstinson', 'Barney', 'Stinson');
+insert into users values ('user2204', 'Commonname', 'Commonlastname');

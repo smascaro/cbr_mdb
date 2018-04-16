@@ -183,3 +183,100 @@ create or replace procedure check_attributes_song (
 /*testing procedure check_attributes_song*/
 execute check_attributes_song (23);/*will show list with file information*/
 execute check_attributes_song (47);/*this song does not exist -> handle exception*/
+
+
+/* procedure to check similar songs in terms of duration */
+create or replace procedure check_songs_by_duration(
+  song_id songs.id%type
+  ) 
+  is
+    ctx RAW(64) := NULL;
+    obj ORDAUDIO;
+    current_song songs%rowtype;
+    obj_duration integer;
+    obj_title songs.title%type;
+    obj_artist songs.artist%type;
+    cursor cur_songs is select *
+      from songs
+      where id != song_id;
+  begin
+    select trackfile, title, artist into obj, obj_title, obj_artist from songs where id = song_id;
+    if obj.checkProperties(ctx) = TRUE then
+      obj_duration := obj.getAudioDuration();
+      dbms_output.put_line(obj_title || ' - ' || obj_artist || ': ' || obj_duration || ' s');
+      dbms_output.put_line('----------------------------------');
+      open cur_songs;
+      loop
+        fetch cur_songs
+        into current_song;
+        EXIT WHEN cur_songs%NOTFOUND;
+        if current_song.trackfile.getAudioDuration() < obj_duration +  10 and 
+           current_song.trackfile.getAudioDuration() > obj_duration - 10 then 
+           dbms_output.put_line(current_song.title || ' - ' || current_song.artist || ': ' || current_song.trackfile.getAudioDuration() || ' s');
+        end if;
+        
+      end loop;
+    else 
+      dbms_output.put_line('Properties not set for this song file.');
+    end if;
+
+    EXCEPTION 
+      WHEN NO_DATA_FOUND then
+        dbms_output.put_line('There is no song with this ID in the database.');
+  
+  end;
+  
+execute check_songs_by_duration(20);  /* exists -> print similar songs in terms of duration */
+execute check_songs_by_duration(205); /* not exists -> handle exception */
+
+
+create or replace procedure play_song (
+  play_user users.username%type,
+  play_song_id songs.id%type,
+  play_count number default 1
+) 
+is
+  user_exists number;
+  song_exists number;
+  play_exists number;
+begin
+  select count(*) into user_exists from users where username = play_user;
+  select count(*) into song_exists from songs where id = play_song_id;
+  select count(*) into play_exists from playhistory where username = play_user and song_id = play_song_id;
+  
+  if song_exists <> 0 and user_exists <> 0 then
+    if play_exists = 0 then
+      insert into playhistory values (play_user, play_song_id, play_count);
+    else 
+      update playhistory 
+      set playcount = playcount + play_count 
+      where username = play_user and song_id = play_song_id;
+    end if;
+  else 
+    dbms_output.put_line('Either the song or the user does not exist.');
+  end if;
+  exception
+  
+    when NO_DATA_FOUND then
+      dbms_output.put_line('Either the song or the user does not exist.');
+end;
+
+execute play_song('msk1416', 6, 10);
+/* trigger that checks if a song has been played more than 30 times, if so, it will
+    be added to favorite list in a new playlist called 'Most played songs' */
+create or replace trigger update_playcount 
+after insert or update 
+on playhistory
+for each row
+declare
+  isFav number;
+  user users.username%type := :new.username;
+  song songs.id%type := :new.song_id;
+  plsql_block VARCHAR2(500);
+begin
+  select count (*) into isFav from favs where username = :new.username and song_id = :new.song_id;
+  if :new.playcount > 30 and isFav = 0 then
+    plsql_block := 'BEGIN add_favorite(:user, :song, ''Most played songs''); END;';
+    execute immediate plsql_block using user, song;
+  end if;
+end;

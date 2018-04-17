@@ -184,6 +184,23 @@ create or replace procedure check_attributes_song (
 execute check_attributes_song (23);/*will show list with file information*/
 execute check_attributes_song (47);/*this song does not exist -> handle exception*/
 
+/* function that returns the minutes - seconds representation for a given duration
+ in seconds */
+create or replace function seconds_to_minutes (
+  duration number
+  ) return varchar 
+  IS
+    minutes number;
+    seconds number;
+  begin
+    if duration < 60 then
+      return duration || ' s';
+    else
+      minutes := Floor(duration / 60);
+      seconds := duration - minutes * 60;
+      return minutes || 'm ' || seconds || 's';
+    end if;
+  end;
 
 /* procedure to check similar songs in terms of duration */
 create or replace procedure check_songs_by_duration(
@@ -203,7 +220,7 @@ create or replace procedure check_songs_by_duration(
     select trackfile, title, artist into obj, obj_title, obj_artist from songs where id = song_id;
     if obj.checkProperties(ctx) = TRUE then
       obj_duration := obj.getAudioDuration();
-      dbms_output.put_line(obj_title || ' - ' || obj_artist || ': ' || obj_duration || ' s');
+      dbms_output.put_line(obj_title || ' - ' || obj_artist || ': ' || seconds_to_minutes(obj_duration));
       dbms_output.put_line('----------------------------------');
       open cur_songs;
       loop
@@ -212,7 +229,7 @@ create or replace procedure check_songs_by_duration(
         EXIT WHEN cur_songs%NOTFOUND;
         if current_song.trackfile.getAudioDuration() < obj_duration +  10 and 
            current_song.trackfile.getAudioDuration() > obj_duration - 10 then 
-           dbms_output.put_line(current_song.title || ' - ' || current_song.artist || ': ' || current_song.trackfile.getAudioDuration() || ' s');
+           dbms_output.put_line(current_song.title || ' - ' || current_song.artist || ': ' || seconds_to_minutes(current_song.trackfile.getAudioDuration()));
         end if;
         
       end loop;
@@ -226,8 +243,8 @@ create or replace procedure check_songs_by_duration(
   
   end;
   
-execute check_songs_by_duration(20);  /* exists -> print similar songs in terms of duration */
-execute check_songs_by_duration(205); /* not exists -> handle exception */
+execute check_songs_by_duration(29);  /* exists -> print similar songs in terms of duration */
+execute check_songs_by_duration(999); /* not exists -> handle exception */
 
 
 create or replace procedure play_song (
@@ -262,6 +279,8 @@ begin
 end;
 
 execute play_song('msk1416', 6, 10);
+execute play_song('bstinson', 18, 20);
+
 /* trigger that checks if a song has been played more than 30 times, if so, it will
     be added to favorite list in a new playlist called 'Most played songs' */
 create or replace trigger update_playcount 

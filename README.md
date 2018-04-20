@@ -1,5 +1,13 @@
 # cbr_mdb
 Design and implement a multimedia database system for an online playlist manager. Save your favorite songs, create playlists and export them.  
+## Files
+In order to emulate exact system, it will be needed to download all audio files and keep them in a precise structure. The following link will download a compressed folder with the directory structure which includes:
+  * 45 audio files
+  * 4 album covers
+  * samples of exported playlists  
+  
+[Download file (301 MB)](https://drive.google.com/open?id=1-Uwx_D9XZ76Y26z3ZgvD7whMsCk0b3-A)
+
 ## Usage:
 1. In file **init.sql**  
   1.1. Run directory creation scripts as sysdba  

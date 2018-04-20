@@ -202,7 +202,7 @@ CREATE OR REPLACE FUNCTION SECONDS_TO_MINUTES (
     END IF;
   END;
 
-/* procedure to check similar songs in terms of duration */
+/* procedure to check similar songs in terms of duration (+-10 seconds)*/
 CREATE OR REPLACE PROCEDURE CHECK_SONGS_BY_DURATION(
   SONG_ID SONGS.ID%TYPE
   ) 
@@ -278,8 +278,9 @@ BEGIN
       DBMS_OUTPUT.PUT_LINE('Either the song or the user does not exist.');
 END;
 
-EXECUTE PLAY_SONG('msk1416', 6, 10);
+EXECUTE PLAY_SONG('msk1416', 6, 40);
 EXECUTE PLAY_SONG('bstinson', 18, 20);
+EXECUTE PLAY_SONG('msk1416', 7);
 
 /* trigger that checks if a song has been played more than 30 times, if so, it will
     be added to favorite list in a new playlist called 'Most played songs' */

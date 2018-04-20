@@ -1,5 +1,5 @@
 # cbr_mdb
-Design and implement a multimedia database system for the chosen subject area.
+Design and implement a multimedia database system for an online playlist manager. Save your favorite songs, create playlists and export them.  
 ## Usage:
 1. In file **init.sql**  
   1.1. Run directory creation scripts as sysdba  

@@ -1,23 +1,23 @@
 /* run as sysdba */
-create or replace directory MEDIA_DIR AS '/home/oracle/mdb_cbr/music';
-grant read,write on directory MEDIA_DIR to MDB;
-commit;
+CREATE OR REPLACE DIRECTORY MEDIA_DIR AS '/home/oracle/mdb_cbr/music';
+GRANT READ,WRITE ON DIRECTORY MEDIA_DIR TO MDB;
+COMMIT;
 
-create or replace directory IMAGES_DIR AS '/home/oracle/mdb_cbr/images';
-grant read, write on directory IMAGES_DIR to MDB;
-commit;
+CREATE OR REPLACE DIRECTORY IMAGES_DIR AS '/home/oracle/mdb_cbr/images';
+GRANT READ, WRITE ON DIRECTORY IMAGES_DIR TO MDB;
+COMMIT;
 
-create or replace directory EXPORTS_DIR AS '/home/oracle/mdb_cbr/exports';
-grant read, write on directory EXPORTS_DIR to MDB;
-commit;
+CREATE OR REPLACE DIRECTORY EXPORTS_DIR AS '/home/oracle/mdb_cbr/exports';
+GRANT READ, WRITE ON DIRECTORY EXPORTS_DIR TO MDB;
+COMMIT;
 /* end run as sysdba */
 
 /* enable output */
-set serveroutput on;
+SET SERVEROUTPUT ON;
 
 /*check directories have been created succesfully*/
-select * from dba_directories 
-where directory_name = 'MEDIA_DIR' or directory_name = 'IMAGES_DIR' or directory_name = 'EXPORTS_DIR';
+SELECT * FROM DBA_DIRECTORIES 
+WHERE DIRECTORY_NAME = 'MEDIA_DIR' OR DIRECTORY_NAME = 'IMAGES_DIR' OR DIRECTORY_NAME = 'EXPORTS_DIR';
 
 
 

@@ -1,301 +1,301 @@
 /*procedure to insert a song into datbase given its info and the filename 
   (file must be placed in MEDIA_DIR directory)*/
-CREATE OR REPLACE PROCEDURE add_song (
-  new_title IN VARCHAR2,
-  new_artist IN VARCHAR2,
-  new_album IN VARCHAR2,
-  filename IN VARCHAR2)
+CREATE OR REPLACE PROCEDURE ADD_SONG (
+  NEW_TITLE IN VARCHAR2,
+  NEW_ARTIST IN VARCHAR2,
+  NEW_ALBUM IN VARCHAR2,
+  FILENAME IN VARCHAR2)
   
 IS
-  obj ORDAUDIO;
-  ctx RAW(64) := NULL;
-  new_id NUMBER;
-  found NUMBER := 0;
+  OBJ ORDAUDIO;
+  CTX RAW(64) := NULL;
+  NEW_ID NUMBER;
+  FOUND NUMBER := 0;
 BEGIN
-  select MAX(ID) into new_id from SONGS;
-  new_id := new_id + 1;
-  select count(*) into found from songs 
-  where title = new_title and artist = new_artist and album = new_album;
-  if found = 0 then 
-    insert into songs 
-    values (new_title, new_artist, new_album, ORDAudio.init('FILE','MEDIA_DIR',filename), new_id)
-    returning trackfile into obj;
+  SELECT MAX(ID) INTO NEW_ID FROM SONGS;
+  NEW_ID := NEW_ID + 1;
+  SELECT COUNT(*) INTO FOUND FROM SONGS 
+  WHERE TITLE = NEW_TITLE AND ARTIST = NEW_ARTIST AND ALBUM = NEW_ALBUM;
+  IF FOUND = 0 THEN 
+    INSERT INTO SONGS 
+    VALUES (NEW_TITLE, NEW_ARTIST, NEW_ALBUM, ORDAUDIO.INIT('FILE','MEDIA_DIR',FILENAME), NEW_ID)
+    RETURNING TRACKFILE INTO OBJ;
   
-    obj.import(ctx);
+    OBJ.IMPORT(CTX);
    
-    obj.setProperties(ctx);
+    OBJ.SETPROPERTIES(CTX);
    
-    UPDATE songs SET trackfile = obj WHERE title=new_title and artist=new_artist;
+    UPDATE SONGS SET TRACKFILE = OBJ WHERE TITLE=NEW_TITLE AND ARTIST=NEW_ARTIST;
     COMMIT;
-    dbms_output.put_line(new_title || ' by ' || new_artist || ' has been inserted in the system.');
-  else
-    dbms_output.put_line('This song already exists in the system.');
-  end if;
+    DBMS_OUTPUT.PUT_LINE(NEW_TITLE || ' by ' || NEW_ARTIST || ' has been inserted in the system.');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('This song already exists in the system.');
+  END IF;
   END;
 /
 
 /*following execution will fail if the song already exists*/
-execute ADD_SONG('Com camot', 'Auxili', 'Tresors', 'converses_de_balcons.mp3');
+EXECUTE ADD_SONG('Com camot', 'Auxili', 'Tresors', 'converses_de_balcons.mp3');
 
 
 
 /*procedure that inserts a song to the user's favorite list,
   user can pass a playlist name in order to classify his songs*/
 
-create or replace procedure add_favorite (
-  u_name FAVS.USERNAME%TYPE,
-  song favs.song_id%type,
-  pl_name favs.playlist%type default ' '
+CREATE OR REPLACE PROCEDURE ADD_FAVORITE (
+  U_NAME FAVS.USERNAME%TYPE,
+  SONG FAVS.SONG_ID%TYPE,
+  PL_NAME FAVS.PLAYLIST%TYPE DEFAULT ' '
 ) 
-is 
-  in_playlist NUMBER := 0;
-  exists_playlist NUMBER;
-  exists_song NUMBER;
-  exists_user NUMBER;
-begin 
-  select count(*) into exists_user from users where username = u_name;
-  select count(*) into exists_song from songs where id = song;
-  if exists_user > 0 and exists_song > 0 then
-    select count(*) into exists_playlist from favs where playlist = pl_name and username = u_name;
-    if pl_name != ' ' then 
-        in_playlist := 1; 
-    end if;
-    insert into favs values (u_name, song, pl_name);
-    if sql%rowcount > 0 then
-      if in_playlist > 0 then
-        if exists_playlist > 0 then
-          dbms_output.put_line('Song inserted into playlist named ' || pl_name || ' from user ' || u_name || '.');
-        else
-          dbms_output.put_line('New playlist named ' || pl_name || ' has been created for user ' || u_name || '. The song has been inserted into the new playlist.');
-        end if;
-      else
-        dbms_output.put_line('Song inserted into '|| u_name ||'''s favorites, but not related to any playlist.');
-      end if;
-    else
-      dbms_output.put_line('Song couldnt be inserted into favorites table.');
-    end if;
-  else
-    dbms_output.put_line('Either the song or the username does not exist.');
-  end if;
+IS 
+  IN_PLAYLIST NUMBER := 0;
+  EXISTS_PLAYLIST NUMBER;
+  EXISTS_SONG NUMBER;
+  EXISTS_USER NUMBER;
+BEGIN 
+  SELECT COUNT(*) INTO EXISTS_USER FROM USERS WHERE USERNAME = U_NAME;
+  SELECT COUNT(*) INTO EXISTS_SONG FROM SONGS WHERE ID = SONG;
+  IF EXISTS_USER > 0 AND EXISTS_SONG > 0 THEN
+    SELECT COUNT(*) INTO EXISTS_PLAYLIST FROM FAVS WHERE PLAYLIST = PL_NAME AND USERNAME = U_NAME;
+    IF PL_NAME != ' ' THEN 
+        IN_PLAYLIST := 1; 
+    END IF;
+    INSERT INTO FAVS VALUES (U_NAME, SONG, PL_NAME);
+    IF SQL%ROWCOUNT > 0 THEN
+      IF IN_PLAYLIST > 0 THEN
+        IF EXISTS_PLAYLIST > 0 THEN
+          DBMS_OUTPUT.PUT_LINE('Song inserted into playlist named ' || PL_NAME || ' from user ' || U_NAME || '.');
+        ELSE
+          DBMS_OUTPUT.PUT_LINE('New playlist named ' || PL_NAME || ' has been created for user ' || U_NAME || '. The song has been inserted into the new playlist.');
+        END IF;
+      ELSE
+        DBMS_OUTPUT.PUT_LINE('Song inserted into '|| U_NAME ||'''s favorites, but not related to any playlist.');
+      END IF;
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('Song couldnt be inserted into favorites table.');
+    END IF;
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Either the song or the username does not exist.');
+  END IF;
 
-end;
+END;
 
 /*testing add_favorite procedure*/
-set serveroutput on;
-execute add_favorite('msk1416', 20, 'vinarock');/*new playlist by msk1416*/
-execute add_favorite('msk1416', 15, 'vinarock');/*existing playlist*/
-execute add_favorite('msk1416', 30);/*not related to playlist*/
-execute add_favorite('msk1416', 60, 'nonexistentsong'); /*fail: song does not exist*/
-execute add_favorite('idontexist', 10);/*fail: user does not exist*/
-execute add_favorite('idontexisteither', 60);/*fail either user and song don't exist*/
-execute add_favorite('bstinson', 23, 'vinarock');/*new playlist by bstinson*/
-execute add_favorite('bstinson', 31, 'Get Psyched Mix 2.0');/*new playlist by bstinson*/
-execute add_favorite('msk1416', 1, 'vinarock'); 
-execute add_favorite('msk1416', 39, 'vinarock'); 
-execute add_favorite('msk1416', 44, 'vinarock');
-execute add_favorite('msk1416', 32, 'vinarock');
-execute add_favorite('msk1416', 31, 'vinarock');
-execute add_favorite('msk1416', 23, 'vinarock');
-execute add_favorite('msk1416', 29, 'vinarock');
-execute add_favorite('bstinson', 21, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 12, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 43, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 5, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 44, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 39, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 8, 'Get Psyched Mix 2.0');
-execute add_favorite('bstinson', 27, 'Get Psyched Mix 2.0');
+SET SERVEROUTPUT ON;
+EXECUTE ADD_FAVORITE('msk1416', 20, 'vinarock');/*new playlist by msk1416*/
+EXECUTE ADD_FAVORITE('msk1416', 15, 'vinarock');/*existing playlist*/
+EXECUTE ADD_FAVORITE('msk1416', 30);/*not related to playlist*/
+EXECUTE ADD_FAVORITE('msk1416', 60, 'nonexistentsong'); /*fail: song does not exist*/
+EXECUTE ADD_FAVORITE('idontexist', 10);/*fail: user does not exist*/
+EXECUTE ADD_FAVORITE('idontexisteither', 60);/*fail either user and song don't exist*/
+EXECUTE ADD_FAVORITE('bstinson', 23, 'vinarock');/*new playlist by bstinson*/
+EXECUTE ADD_FAVORITE('bstinson', 31, 'Get Psyched Mix 2.0');/*new playlist by bstinson*/
+EXECUTE ADD_FAVORITE('msk1416', 1, 'vinarock'); 
+EXECUTE ADD_FAVORITE('msk1416', 39, 'vinarock'); 
+EXECUTE ADD_FAVORITE('msk1416', 44, 'vinarock');
+EXECUTE ADD_FAVORITE('msk1416', 32, 'vinarock');
+EXECUTE ADD_FAVORITE('msk1416', 31, 'vinarock');
+EXECUTE ADD_FAVORITE('msk1416', 23, 'vinarock');
+EXECUTE ADD_FAVORITE('msk1416', 29, 'vinarock');
+EXECUTE ADD_FAVORITE('bstinson', 21, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 12, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 43, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 5, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 44, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 39, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 8, 'Get Psyched Mix 2.0');
+EXECUTE ADD_FAVORITE('bstinson', 27, 'Get Psyched Mix 2.0');
 
 
 /*procedure to export a user's playlist in xml format*/
-create or replace procedure export_playlist_to_xml (
-  u_name favs.username%type,
-  pl_name favs.playlist%type
+CREATE OR REPLACE PROCEDURE EXPORT_PLAYLIST_TO_XML (
+  U_NAME FAVS.USERNAME%TYPE,
+  PL_NAME FAVS.PLAYLIST%TYPE
   )
-  is
-    cursor cur_songs is select song_id 
-      from favs 
-      where username = u_name and playlist = pl_name;
-    exp_file UTL_FILE.FILE_TYPE;
-    filename VARCHAR(100);
-    song favs.song_id%type;
-    songrow songs%rowtype;
-    exists_playlist NUMBER;
-  begin
-    select count(*) into exists_playlist from favs where username = u_name and playlist = pl_name;
-    if exists_playlist > 0 then 
-      filename := 'export_' || pl_name || '_' || u_name || '.xml';
-      exp_file := UTL_FILE.FOPEN('EXPORTS_DIR',filename,'W');
-      UTL_FILE.put_line(exp_file, '<?xml version="1.0" encoding="UTF-8"?>');
-      UTL_FILE.put_line(exp_file, '<Playlist name='''|| pl_name ||''' user='''|| u_name ||'''>');
-      open cur_songs;
-      loop
-        fetch cur_songs
-        into song;
-        EXIT WHEN cur_songs%NOTFOUND;
+  IS
+    CURSOR CUR_SONGS IS SELECT SONG_ID 
+      FROM FAVS 
+      WHERE USERNAME = U_NAME AND PLAYLIST = PL_NAME;
+    EXP_FILE UTL_FILE.FILE_TYPE;
+    FILENAME VARCHAR(100);
+    SONG FAVS.SONG_ID%TYPE;
+    SONGROW SONGS%ROWTYPE;
+    EXISTS_PLAYLIST NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO EXISTS_PLAYLIST FROM FAVS WHERE USERNAME = U_NAME AND PLAYLIST = PL_NAME;
+    IF EXISTS_PLAYLIST > 0 THEN 
+      FILENAME := 'export_' || PL_NAME || '_' || U_NAME || '.xml';
+      EXP_FILE := UTL_FILE.FOPEN('EXPORTS_DIR',FILENAME,'W');
+      UTL_FILE.PUT_LINE(EXP_FILE, '<?xml version="1.0" encoding="UTF-8"?>');
+      UTL_FILE.PUT_LINE(EXP_FILE, '<Playlist name='''|| PL_NAME ||''' user='''|| U_NAME ||'''>');
+      OPEN CUR_SONGS;
+      LOOP
+        FETCH CUR_SONGS
+        INTO SONG;
+        EXIT WHEN CUR_SONGS%NOTFOUND;
         
-        select * into songrow from songs where id = song;
-        UTL_FILE.put_line(exp_file, '<Song>');
-        UTL_FILE.put_line(exp_file, '<UniqueId>' || songrow.ID || '</UniqueId>');
-        UTL_FILE.put_line(exp_file, '<Title>' || songrow.title || '</Title>');
-        UTL_FILE.put_line(exp_file, '<Artist>' || songrow.artist || '</Artist>');
-        UTL_FILE.put_line(exp_file, '<Album>' || songrow.album || '</Album>');
-        UTL_FILE.put_line(exp_file, '</Song>');
+        SELECT * INTO SONGROW FROM SONGS WHERE ID = SONG;
+        UTL_FILE.PUT_LINE(EXP_FILE, '<Song>');
+        UTL_FILE.PUT_LINE(EXP_FILE, '<UniqueId>' || SONGROW.ID || '</UniqueId>');
+        UTL_FILE.PUT_LINE(EXP_FILE, '<Title>' || SONGROW.TITLE || '</Title>');
+        UTL_FILE.PUT_LINE(EXP_FILE, '<Artist>' || SONGROW.ARTIST || '</Artist>');
+        UTL_FILE.PUT_LINE(EXP_FILE, '<Album>' || SONGROW.ALBUM || '</Album>');
+        UTL_FILE.PUT_LINE(EXP_FILE, '</Song>');
         
-      end loop;
-      UTL_FILE.put_line(exp_file, '</Playlist>');
-      UTL_FILE.FCLOSE(exp_file);
-    else
-      dbms_output.put_line('No export has been done as this playlist does not exist for this user.');
-    end if;
-  end;
+      END LOOP;
+      UTL_FILE.PUT_LINE(EXP_FILE, '</Playlist>');
+      UTL_FILE.FCLOSE(EXP_FILE);
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('No export has been done as this playlist does not exist for this user.');
+    END IF;
+  END;
 
-execute export_playlist_to_xml ('msk1416', 'vinarock');
-execute export_playlist_to_xml ('bstinson', 'Get Psyched Mix 2.0');
+EXECUTE EXPORT_PLAYLIST_TO_XML ('msk1416', 'vinarock');
+EXECUTE EXPORT_PLAYLIST_TO_XML ('bstinson', 'Get Psyched Mix 2.0');
 
 
 
 /*procedure that outputs a list with internal information for a requested song*/
-create or replace procedure check_attributes_song (
-  song_id songs.id%type
+CREATE OR REPLACE PROCEDURE CHECK_ATTRIBUTES_SONG (
+  SONG_ID SONGS.ID%TYPE
   )
-  is
-    ctx RAW(64) := NULL;
-    obj ORDAUDIO;
-    tempLob CLOB;
-  begin
-    select trackfile into obj from songs where id = song_id;
-    if obj.checkProperties(ctx) = TRUE then
+  IS
+    CTX RAW(64) := NULL;
+    OBJ ORDAUDIO;
+    TEMPLOB CLOB;
+  BEGIN
+    SELECT TRACKFILE INTO OBJ FROM SONGS WHERE ID = SONG_ID;
+    IF OBJ.CHECKPROPERTIES(CTX) = TRUE THEN
       DBMS_OUTPUT.PUT_LINE('Attribute list:');
       DBMS_OUTPUT.PUT_LINE('-------------------------------------------');
-      DBMS_LOB.CREATETEMPORARY(tempLob, FALSE, DBMS_LOB.CALL);
-      obj.getAllAttributes(ctx,tempLob);
-      DBMS_OUTPUT.PUT_LINE(REPLACE(DBMS_LOB.substr(tempLob, DBMS_LOB.getLength(tempLob),1), ',',  chr(13)||chr(10)));
-    else 
-      dbms_output.put_line('Properties not set for this song file.');
-    end if;
+      DBMS_LOB.CREATETEMPORARY(TEMPLOB, FALSE, DBMS_LOB.CALL);
+      OBJ.GETALLATTRIBUTES(CTX,TEMPLOB);
+      DBMS_OUTPUT.PUT_LINE(REPLACE(DBMS_LOB.SUBSTR(TEMPLOB, DBMS_LOB.GETLENGTH(TEMPLOB),1), ',',  CHR(13)||CHR(10)));
+    ELSE 
+      DBMS_OUTPUT.PUT_LINE('Properties not set for this song file.');
+    END IF;
 
     EXCEPTION 
-      WHEN NO_DATA_FOUND then
-        dbms_output.put_line('There is no song with this ID in the database.');
-  end;
+      WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('There is no song with this ID in the database.');
+  END;
 
 /*testing procedure check_attributes_song*/
-execute check_attributes_song (23);/*will show list with file information*/
-execute check_attributes_song (47);/*this song does not exist -> handle exception*/
+EXECUTE CHECK_ATTRIBUTES_SONG (23);/*will show list with file information*/
+EXECUTE CHECK_ATTRIBUTES_SONG (47);/*this song does not exist -> handle exception*/
 
 /* function that returns the minutes - seconds representation for a given duration
  in seconds */
-create or replace function seconds_to_minutes (
-  duration number
-  ) return varchar 
+CREATE OR REPLACE FUNCTION SECONDS_TO_MINUTES (
+  DURATION NUMBER
+  ) RETURN VARCHAR 
   IS
-    minutes number;
-    seconds number;
-  begin
-    if duration < 60 then
-      return duration || ' s';
-    else
-      minutes := Floor(duration / 60);
-      seconds := duration - minutes * 60;
-      return minutes || 'm ' || seconds || 's';
-    end if;
-  end;
+    MINUTES NUMBER;
+    SECONDS NUMBER;
+  BEGIN
+    IF DURATION < 60 THEN
+      RETURN DURATION || ' s';
+    ELSE
+      MINUTES := FLOOR(DURATION / 60);
+      SECONDS := DURATION - MINUTES * 60;
+      RETURN MINUTES || 'm ' || SECONDS || 's';
+    END IF;
+  END;
 
 /* procedure to check similar songs in terms of duration */
-create or replace procedure check_songs_by_duration(
-  song_id songs.id%type
+CREATE OR REPLACE PROCEDURE CHECK_SONGS_BY_DURATION(
+  SONG_ID SONGS.ID%TYPE
   ) 
-  is
-    ctx RAW(64) := NULL;
-    obj ORDAUDIO;
-    current_song songs%rowtype;
-    obj_duration integer;
-    obj_title songs.title%type;
-    obj_artist songs.artist%type;
-    cursor cur_songs is select *
-      from songs
-      where id != song_id;
-  begin
-    select trackfile, title, artist into obj, obj_title, obj_artist from songs where id = song_id;
-    if obj.checkProperties(ctx) = TRUE then
-      obj_duration := obj.getAudioDuration();
-      dbms_output.put_line(obj_title || ' - ' || obj_artist || ': ' || seconds_to_minutes(obj_duration));
-      dbms_output.put_line('----------------------------------');
-      open cur_songs;
-      loop
-        fetch cur_songs
-        into current_song;
-        EXIT WHEN cur_songs%NOTFOUND;
-        if current_song.trackfile.getAudioDuration() < obj_duration +  10 and 
-           current_song.trackfile.getAudioDuration() > obj_duration - 10 then 
-           dbms_output.put_line(current_song.title || ' - ' || current_song.artist || ': ' || seconds_to_minutes(current_song.trackfile.getAudioDuration()));
-        end if;
+  IS
+    CTX RAW(64) := NULL;
+    OBJ ORDAUDIO;
+    CURRENT_SONG SONGS%ROWTYPE;
+    OBJ_DURATION INTEGER;
+    OBJ_TITLE SONGS.TITLE%TYPE;
+    OBJ_ARTIST SONGS.ARTIST%TYPE;
+    CURSOR CUR_SONGS IS SELECT *
+      FROM SONGS
+      WHERE ID != SONG_ID;
+  BEGIN
+    SELECT TRACKFILE, TITLE, ARTIST INTO OBJ, OBJ_TITLE, OBJ_ARTIST FROM SONGS WHERE ID = SONG_ID;
+    IF OBJ.CHECKPROPERTIES(CTX) = TRUE THEN
+      OBJ_DURATION := OBJ.GETAUDIODURATION();
+      DBMS_OUTPUT.PUT_LINE(OBJ_TITLE || ' - ' || OBJ_ARTIST || ': ' || SECONDS_TO_MINUTES(OBJ_DURATION));
+      DBMS_OUTPUT.PUT_LINE('----------------------------------');
+      OPEN CUR_SONGS;
+      LOOP
+        FETCH CUR_SONGS
+        INTO CURRENT_SONG;
+        EXIT WHEN CUR_SONGS%NOTFOUND;
+        IF CURRENT_SONG.TRACKFILE.GETAUDIODURATION() < OBJ_DURATION +  10 AND 
+           CURRENT_SONG.TRACKFILE.GETAUDIODURATION() > OBJ_DURATION - 10 THEN 
+           DBMS_OUTPUT.PUT_LINE(CURRENT_SONG.TITLE || ' - ' || CURRENT_SONG.ARTIST || ': ' || SECONDS_TO_MINUTES(CURRENT_SONG.TRACKFILE.GETAUDIODURATION()));
+        END IF;
         
-      end loop;
-    else 
-      dbms_output.put_line('Properties not set for this song file.');
-    end if;
+      END LOOP;
+    ELSE 
+      DBMS_OUTPUT.PUT_LINE('Properties not set for this song file.');
+    END IF;
 
     EXCEPTION 
-      WHEN NO_DATA_FOUND then
-        dbms_output.put_line('There is no song with this ID in the database.');
+      WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('There is no song with this ID in the database.');
   
-  end;
+  END;
   
-execute check_songs_by_duration(29);  /* exists -> print similar songs in terms of duration */
-execute check_songs_by_duration(999); /* not exists -> handle exception */
+EXECUTE CHECK_SONGS_BY_DURATION(29);  /* exists -> print similar songs in terms of duration */
+EXECUTE CHECK_SONGS_BY_DURATION(999); /* not exists -> handle exception */
 
 
-create or replace procedure play_song (
-  play_user users.username%type,
-  play_song_id songs.id%type,
-  play_count number default 1
+CREATE OR REPLACE PROCEDURE PLAY_SONG (
+  PLAY_USER USERS.USERNAME%TYPE,
+  PLAY_SONG_ID SONGS.ID%TYPE,
+  PLAY_COUNT NUMBER DEFAULT 1
 ) 
-is
-  user_exists number;
-  song_exists number;
-  play_exists number;
-begin
-  select count(*) into user_exists from users where username = play_user;
-  select count(*) into song_exists from songs where id = play_song_id;
-  select count(*) into play_exists from playhistory where username = play_user and song_id = play_song_id;
+IS
+  USER_EXISTS NUMBER;
+  SONG_EXISTS NUMBER;
+  PLAY_EXISTS NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO USER_EXISTS FROM USERS WHERE USERNAME = PLAY_USER;
+  SELECT COUNT(*) INTO SONG_EXISTS FROM SONGS WHERE ID = PLAY_SONG_ID;
+  SELECT COUNT(*) INTO PLAY_EXISTS FROM PLAYHISTORY WHERE USERNAME = PLAY_USER AND SONG_ID = PLAY_SONG_ID;
   
-  if song_exists <> 0 and user_exists <> 0 then
-    if play_exists = 0 then
-      insert into playhistory values (play_user, play_song_id, play_count);
-    else 
-      update playhistory 
-      set playcount = playcount + play_count 
-      where username = play_user and song_id = play_song_id;
-    end if;
-  else 
-    dbms_output.put_line('Either the song or the user does not exist.');
-  end if;
-  exception
+  IF SONG_EXISTS <> 0 AND USER_EXISTS <> 0 THEN
+    IF PLAY_EXISTS = 0 THEN
+      INSERT INTO PLAYHISTORY VALUES (PLAY_USER, PLAY_SONG_ID, PLAY_COUNT);
+    ELSE 
+      UPDATE PLAYHISTORY 
+      SET PLAYCOUNT = PLAYCOUNT + PLAY_COUNT 
+      WHERE USERNAME = PLAY_USER AND SONG_ID = PLAY_SONG_ID;
+    END IF;
+  ELSE 
+    DBMS_OUTPUT.PUT_LINE('Either the song or the user does not exist.');
+  END IF;
+  EXCEPTION
   
-    when NO_DATA_FOUND then
-      dbms_output.put_line('Either the song or the user does not exist.');
-end;
+    WHEN NO_DATA_FOUND THEN
+      DBMS_OUTPUT.PUT_LINE('Either the song or the user does not exist.');
+END;
 
-execute play_song('msk1416', 6, 10);
-execute play_song('bstinson', 18, 20);
+EXECUTE PLAY_SONG('msk1416', 6, 10);
+EXECUTE PLAY_SONG('bstinson', 18, 20);
 
 /* trigger that checks if a song has been played more than 30 times, if so, it will
     be added to favorite list in a new playlist called 'Most played songs' */
-create or replace trigger update_playcount 
-after insert or update 
-on playhistory
-for each row
-declare
-  isFav number;
-  user users.username%type := :new.username;
-  song songs.id%type := :new.song_id;
-  plsql_block VARCHAR2(500);
-begin
-  select count (*) into isFav from favs where username = :new.username and song_id = :new.song_id;
-  if :new.playcount > 30 and isFav = 0 then
-    plsql_block := 'BEGIN add_favorite(:user, :song, ''Most played songs''); END;';
-    execute immediate plsql_block using user, song;
-  end if;
-end;
+CREATE OR REPLACE TRIGGER UPDATE_PLAYCOUNT 
+AFTER INSERT OR UPDATE 
+ON PLAYHISTORY
+FOR EACH ROW
+DECLARE
+  ISFAV NUMBER;
+  USER USERS.USERNAME%TYPE := :NEW.USERNAME;
+  SONG SONGS.ID%TYPE := :NEW.SONG_ID;
+  PLSQL_BLOCK VARCHAR2(500);
+BEGIN
+  SELECT COUNT (*) INTO ISFAV FROM FAVS WHERE USERNAME = :NEW.USERNAME AND SONG_ID = :NEW.SONG_ID;
+  IF :NEW.PLAYCOUNT > 30 AND ISFAV = 0 THEN
+    PLSQL_BLOCK := 'BEGIN add_favorite(:user, :song, ''Most played songs''); END;';
+    EXECUTE IMMEDIATE PLSQL_BLOCK USING USER, SONG;
+  END IF;
+END;

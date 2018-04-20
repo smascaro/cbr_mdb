@@ -10,7 +10,7 @@ In order to emulate exact system, it will be needed to download all audio files 
 
 ## Usage:
 1. In file **init.sql**  
-  1.1. Run directory creation scripts as sysdba  
+  1.1. Run directory creation scripts as sysdba. Change directory paths to where you downloaded previous file structure.   
   1.2. Enable server output  
   1.3. (optional) use last queries in order to check if directories were created succesfully  
 2. Run **table_creation.sql** script (tables will be created in a correct order)  
